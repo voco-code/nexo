@@ -2355,9 +2355,24 @@ async function dbSet(key, value, shared) {
     try {
       await rtdb.ref(fbPath(key)).set(JSON.stringify(value));
       return true;
-    } catch (e) { return false; }
+    } catch (e) {
+      // Пишем в консоль и один раз предупреждаем в интерфейсе — иначе
+      // неудачная запись в Firebase (например, не настроены Rules) молча
+      // проглатывается, а локально всё выглядит так, будто всё сохранилось.
+      console.error('[Nexo] Firebase write failed for "' + key + '":', e);
+      warnCloudWriteFailedOnce();
+      return false;
+    }
   }
   return true;
+}
+let cloudWriteWarningShown = false;
+function warnCloudWriteFailedOnce() {
+  if (cloudWriteWarningShown) return;
+  cloudWriteWarningShown = true;
+  if (typeof showToastGlobal === 'function') {
+    showToastGlobal('Не удалось сохранить в облако — проверьте Firebase Rules');
+  }
 }
 async function dbDelete(key, shared) {
   delete memoryDB[key];
@@ -2933,8 +2948,7 @@ async function loadConversation(login) {
   const raw = await dbGet('chat:' + pairKey(profile.login, login), [], true);
   const out = [];
   for (const m of raw) {
-    let text = m.sticker ? m.sticker : (m.text || '');
-    if (m.enc) text = '🔓 Сообщение из старой версии (нечитаемо)'; // legacy encrypted message from before the encryption removal
+    const text = m.sticker ? m.sticker : (m.text || '');
     out.push({
       id: m.id,
       text,
@@ -2946,8 +2960,19 @@ async function loadConversation(login) {
       reactions: m.reactions || {}
     });
   }
-  chatMessages[login] = out;
-  return out;
+  // Сливаем с тем, что уже в памяти, а не затираем целиком: только что
+  // отправленное сообщение может ещё не долететь до Firebase (запись в
+  // процессе или временно недоступна) — если фоновый опрос (каждые 4с)
+  // просто заменит массив прочитанным из облака, свежее сообщение исчезнет
+  // с экрана до следующего успешного тика. Оставляем такие "локальные,
+  // ещё не подтверждённые" сообщения, а для всего остального доверяем
+  // облаку (реакции и т.п. должны быть актуальными).
+  const existing = chatMessages[login] || [];
+  const freshIds = new Set(out.map(m => m.id));
+  const pendingLocal = existing.filter(m => !freshIds.has(m.id));
+  const merged = out.concat(pendingLocal).sort((a, b) => a.ts - b.ts);
+  chatMessages[login] = merged;
+  return merged;
 }
 
 function toggleSetting(key, el) {
