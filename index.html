@@ -74,18 +74,87 @@ input, textarea { font-family: inherit; color: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-/* ========== МОБИЛЬНАЯ ОПТИМИЗАЦИЯ (iPhone/Android) ========== */
+/* ========== МОБИЛЬНАЯ ВЕРСИЯ (iPhone/Android) ==========
+   Полноценный "нативный" мобильный интерфейс: список чатов и открытый чат —
+   два полноэкранных слоя, которые едут друг за другом (как в Telegram/iMessage),
+   а не просто мгновенно скрываются через display:none. Боковая рель (rail)
+   становится нижним таб-баром. Переключение состояний — тот же класс
+   #app.content-open, который уже ставит JS в updateMobilePane(), здесь только
+   переосмыслена CSS-реакция на него. */
 .mobile-back-btn { display: none; }
 .mobile-back-bar { display: none; }
+.mobile-nav-backdrop { display: none; }
 
 @media (max-width: 760px) {
-  /* Список чатов и сама переписка не помещаются рядом — показываем по
-     одной панели, переключение через кнопку "назад" (см. JS updateMobilePane). */
-  .list-panel { width: 100%; }
-  .main-panel { display: none; }
-  #app.content-open .rail,
-  #app.content-open .list-panel { display: none; }
-  #app.content-open .main-panel { display: flex; width: 100%; }
+  #app { position: relative; overflow: hidden; }
+
+  /* --- Нижний таб-бар вместо левой рели --- */
+  .rail {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: calc(58px + env(safe-area-inset-bottom));
+    padding: 6px 18px calc(6px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: 0;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 40;
+    transition: transform .28s cubic-bezier(.32,.72,0,1);
+  }
+  .rail .logo-mark { display: none; }
+  .rail-spacer { display: none; }
+  .rail-btn, .rail-avatar-wrap {
+    width: auto;
+    height: auto;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 14px;
+    border-radius: 12px;
+  }
+  .rail-btn.crown-btn::after,
+  .rail-avatar-wrap::after {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    line-height: 1;
+  }
+  .rail-btn.crown-btn::after { content: "Pro"; }
+  .rail-avatar-wrap::after { content: "Профиль"; }
+  .rail-avatar-wrap { display: flex; align-items: center; margin-top: 0; }
+  .rail-avatar-wrap .rail-avatar { width: 28px; height: 28px; }
+  .rail-online-dot { right: 10px; bottom: 16px; }
+
+  /* Когда открыт чат — таб-бар уезжает вниз, чат занимает весь экран */
+  #app.content-open .rail { transform: translateY(100%); }
+
+  /* --- Список чатов и открытый чат: два слоя друг над другом --- */
+  .list-panel,
+  .main-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    display: flex;
+    border-right: none;
+    transition: transform .3s cubic-bezier(.32,.72,0,1);
+    will-change: transform;
+  }
+  .list-panel {
+    z-index: 10;
+    transform: translateX(0);
+  }
+  .main-panel {
+    z-index: 20;
+    transform: translateX(100%);
+    background: var(--bg);
+  }
+  #app.content-open .list-panel { transform: translateX(-24%); }
+  #app.content-open .main-panel { transform: translateX(0); }
+
+  /* Место снизу списка чатов, чтобы нижний таб-бар не перекрывал последний чат */
+  .list-scroll { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
 
   .mobile-back-btn { display: flex; }
   .mobile-back-bar {
@@ -98,6 +167,7 @@ input, textarea { font-family: inherit; color: inherit; }
     font-size: 14.5px;
     flex-shrink: 0;
   }
+  .chat-header { padding-top: env(safe-area-inset-top); height: calc(64px + env(safe-area-inset-top)); }
 
   /* iOS зумит страницу при фокусе на поле с font-size < 16px — держим всё
      не меньше 16px, чтобы поле не "прыгало" при открытии клавиатуры. */
@@ -107,6 +177,12 @@ input, textarea { font-family: inherit; color: inherit; }
   .friends-dd-search input,
   #msgInput, #serverMsgInput,
   #lockInput { font-size: 16px; }
+
+  /* Более крупные и "пальцеудобные" строки списка чатов */
+  .list-header { padding: calc(14px + env(safe-area-inset-top)) 16px 10px; }
+  .list-item { padding: 13px 12px; gap: 12px; border-radius: 14px; }
+  .list-item:active { background: var(--hover); }
+  .req-btn { width: 34px; height: 34px; }
 
   /* Меню "Друзья" на телефоне открывается снизу, как шторка, а не узкой
      плашкой под кнопкой — так по нему удобнее попадать пальцем и видно
@@ -122,25 +198,35 @@ input, textarea { font-family: inherit; color: inherit; }
     padding-bottom: env(safe-area-inset-bottom);
   }
   .friends-dd-tab { padding: 9px 12px; font-size: 13px; }
-  .friends-dd-row { padding: 11px 8px; }
+  .friends-dd-row { padding: 12px 8px; }
   .friends-dd-add-form .add-friend-input button,
-  .friends-dd-add-form .add-friend-input input { padding: 11px 12px; }
+  .friends-dd-add-form .add-friend-input input { padding: 12px 12px; }
 
   /* Безопасные зоны iPhone (чёлка/индикатор жеста снизу) — работает вместе
      с viewport-fit=cover в <head>. */
-  .rail { padding-top: calc(16px + env(safe-area-inset-top)); }
   .chat-input-wrap { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
   #lockScreen { padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
   .call-modal { padding-bottom: calc(20px + env(safe-area-inset-bottom)); padding-top: calc(20px + env(safe-area-inset-top)); }
 
-  /* Оверлеи/модалки не должны упираться в края экрана */
-  .overlay { padding: 14px; }
-  .modal { max-width: 100%; max-height: 92dvh; }
+  /* Оверлеи/модалки на телефоне — снизу шторкой на весь экран, а не
+     маленькое окошко посередине: так привычнее и легче попасть пальцем */
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
   /* Локальное превью в видеозвонке — компактнее на маленьком экране */
   .call-local-video { width: 30%; max-width: 110px; }
 
-  .header-btn { width: 40px; height: 40px; } /* чуть крупнее для пальца */
+  .header-btn { width: 42px; height: 42px; } /* крупнее — легче попасть пальцем */
+  button, .list-item, .friends-dd-row, .hub-item { -webkit-tap-highlight-color: transparent; }
 }
 
 @media (max-width: 420px) {
@@ -378,7 +464,7 @@ input, textarea { font-family: inherit; color: inherit; }
   gap: 6px;
   flex-shrink: 0;
 }
-.rail { display: none !important; }
+.rail { display: flex !important; }
 .rail .logo-mark {
   width: 38px; height: 38px; font-size: 15px; margin-bottom: 10px; border-radius: 11px;
   box-shadow: 0 4px 12px rgba(14,165,233,0.28);
@@ -1993,7 +2079,7 @@ input, textarea { font-family: inherit; color: inherit; }
   max-width: 420px;
   background: #111827;
   border: 1px solid #1E293B;
-  border-radius: 20px;
+  border-radius: 20px !important;
   padding: 36px 28px 28px;
   text-align: center;
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
@@ -2017,6 +2103,42 @@ input, textarea { font-family: inherit; color: inherit; }
   cursor: pointer;
 }
 .ban-screen-exit-btn:hover { background: #DC2626; }
+.early-unlock-trigger {
+  position: fixed; top: 18px; left: 18px; z-index: 1001;
+  padding: 10px 16px; border: 1px solid #EF4444 !important; border-radius: 10px !important;
+  background: #111827; color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.early-unlock-trigger:hover { background: #EF4444; }
+.unlock-modal-overlay {
+  position: fixed; inset: 0; z-index: 1100; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(30, 30, 30, .72); backdrop-filter: blur(9px);
+}
+.unlock-modal-overlay.visible { display: flex; }
+.unlock-modal-overlay, .unlock-modal-overlay * { border-radius: 12px !important; }
+.unlock-modal-overlay .unlock-modal { border-radius: 16px !important; }
+.unlock-modal {
+  width: 100%; max-width: 390px; border-radius: 0 !important;
+  background: #777; color: #fff; padding: 28px;
+  border: 1px solid #999; box-shadow: 0 16px 50px rgba(0,0,0,.45);
+}
+.unlock-modal h2 { font-size: 21px; margin-bottom: 12px; }
+.unlock-modal p { color: #f1f1f1; font-size: 13.5px; line-height: 1.6; margin-bottom: 18px; }
+.unlock-steps { margin: -4px 0 18px 18px; color: #fff; font-size: 13.5px; line-height: 1.8; }
+.unlock-modal input {
+  width: 100%; padding: 12px; border: 1px solid #aaa; border-radius: 9px !important;
+  background: #666; color: #fff; outline: none; margin-bottom: 6px;
+}
+.unlock-modal input::placeholder { color: #ddd; }
+.unlock-modal input:focus { border-color: #EF4444; }
+.unlock-error { min-height: 18px; color: #ffb4b4; font-size: 12.5px; margin-bottom: 8px; }
+.unlock-danger-btn {
+  width: 100%; padding: 12px; border: 0; border-radius: 9px !important;
+  background: #EF4444; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.unlock-danger-btn:hover { background: #DC2626; }
+.unlock-success-title { color: #fff; }
 
 /* ========== ЖАЛОБЫ NEXOSAFE ========== */
 .report-card { min-width: 220px; }
@@ -2813,10 +2935,24 @@ img.premium-badge {
     <div class="ban-screen-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
     </div>
-    <div class="ban-screen-title">Ваш аккаунт заблокирован.</div>
+    <div class="ban-screen-title" id="banScreenTitle">Ваш аккаунт заблокирован.</div>
     <div class="ban-screen-reason" id="banScreenReason" style="display:none;"></div>
-    <div class="ban-screen-text">Если вы хотите обжаловать данное решение, пишите по почте: <a id="banScreenEmail" href="mailto:nexoteamofficial@gmail.com">nexoteamofficial@gmail.com</a></div>
-    <button class="ban-screen-exit-btn" onclick="banScreenExit()">Выйти</button>
+    <div class="ban-screen-text" id="banScreenText">Если вы хотите обжаловать данное решение, пишите по почте: <a id="banScreenEmail" href="mailto:nexoteamofficial@gmail.com">nexoteamofficial@gmail.com</a></div>
+    <button class="ban-screen-exit-btn" id="banScreenExitBtn" onclick="banScreenExit()">Выйти</button>
+  </div>
+</div>
+<div class="unlock-modal-overlay" id="earlyUnlockOverlay" onclick="if(event.target===this)closeEarlyUnlock()">
+  <div class="unlock-modal" id="earlyUnlockModal">
+    <h2 id="earlyUnlockTitle">Хотите разблокировать?</h2>
+    <p id="earlyUnlockDescription">Поскольку вы являетесь партнёром раннего поддержавшего, мы предлагаем альтернативное решение:</p>
+    <ol class="unlock-steps" id="earlyUnlockSteps">
+      <li>Введите пароль</li>
+      <li>Убедитесь, что это действительно вы</li>
+      <li>Вы свободны!</li>
+    </ol>
+    <input id="earlyUnlockPassword" type="password" placeholder="Пароль" autocomplete="current-password" onkeydown="if(event.key==='Enter')verifyEarlyUnlock()">
+    <div class="unlock-error" id="earlyUnlockError"></div>
+    <button class="unlock-danger-btn" onclick="verifyEarlyUnlock()">Разблокировать</button>
   </div>
 </div>
 
@@ -7114,7 +7250,11 @@ async function cancelOutgoing(login) {
 function updateMobilePane() {
   const app = document.getElementById('app');
   if (!app) return;
-  const contentOpen = mode === 'chat' ? !!activeChat || !!activeGroupId : !!activeServerId;
+  // Раньше здесь проверялся activeServerId только в режиме 'community', но
+  // сейчас каналы открываются прямо из общего списка "Чаты и каналы" при
+  // mode === 'chat' — из-за этого на телефоне при открытии канала панель
+  // с перепиской не разворачивалась на весь экран (оставался виден список).
+  const contentOpen = !!activeChat || !!activeGroupId || !!activeServerId;
   app.classList.toggle('content-open', contentOpen);
 }
 
@@ -7308,7 +7448,14 @@ async function getBannedUsers() {
 async function getBanInfo(login) {
   if (!login) return null;
   const banned = await getBannedUsers();
-  return banned[(login || '').toLowerCase()] || null;
+  const lc = login.toLowerCase();
+  const info = banned[lc] || null;
+  if (info && info.ownerSpam && info.bannedUntil && info.bannedUntil <= Date.now()) {
+    delete banned[lc];
+    await dbSet('bannedUsers', banned, true);
+    return null;
+  }
+  return info;
 }
 async function banLogin(login, reason) {
   if (!login) return;
@@ -7339,10 +7486,92 @@ function showBanScreen(login, banInfo) {
   document.getElementById('app').classList.remove('visible');
   document.getElementById('banScreenOverlay').style.display = 'flex';
   banScreenPendingLogin = login || null;
+  const ownerSpam = !!(banInfo && banInfo.ownerSpam);
+  const title = document.getElementById('banScreenTitle');
+  const text = document.getElementById('banScreenText');
+  const exit = document.getElementById('banScreenExitBtn');
+  if (title) title.textContent = ownerSpam ? 'Вы забанены от Nexo.' : 'Ваш аккаунт заблокирован.';
+  if (text) text.innerHTML = ownerSpam
+    ? 'Причина: Вы слишком много спамите Подождите 5 минут.'
+    : 'Если вы хотите обжаловать данное решение, пишите по почте: <a id="banScreenEmail" href="mailto:nexoteamofficial@gmail.com">nexoteamofficial@gmail.com</a>';
+  if (exit) exit.style.display = ownerSpam ? 'none' : '';
+  const trigger = document.getElementById('earlyUnlockTrigger');
+  if (trigger) {
+    trigger.style.display = 'none';
+    hasEarlySupporterBadge(login).then(hasBadge => {
+      if (trigger && banScreenPendingLogin === login) trigger.style.display = hasBadge ? 'block' : 'none';
+    });
+  }
 }
 let banScreenPendingLogin = null;
+async function hasEarlySupporterBadge(login) {
+  const lc = (login || '').toLowerCase();
+  if (!lc) return false;
+  if (typeof EARLY_SUPPORTER_LOGINS !== 'undefined' && EARLY_SUPPORTER_LOGINS.includes(lc)) return true;
+  const users = await dbGet('users', {}, true);
+  return !!(users[lc] && users[lc].earlySupporter);
+}
 function banScreenExit() {
   document.getElementById('banScreenOverlay').style.display = 'none';
+  document.getElementById('earlyUnlockTrigger')?.style.setProperty('display', 'none');
+  document.getElementById('auth').style.display = '';
+  banScreenPendingLogin = null;
+}
+function openEarlyUnlock() {
+  const input = document.getElementById('earlyUnlockPassword');
+  document.getElementById('earlyUnlockError').textContent = '';
+  input.value = '';
+  document.getElementById('earlyUnlockTitle').textContent = 'Хотите разблокировать?';
+  document.getElementById('earlyUnlockDescription').textContent = 'Поскольку вы являетесь партнёром раннего поддержавшего, мы предлагаем альтернативное решение:';
+  document.getElementById('earlyUnlockSteps').style.display = '';
+  input.style.display = '';
+  document.querySelector('#earlyUnlockModal .unlock-danger-btn').textContent = 'Разблокировать';
+  document.getElementById('earlyUnlockOverlay').classList.add('visible');
+  setTimeout(() => input.focus(), 0);
+}
+function closeEarlyUnlock() {
+  document.getElementById('earlyUnlockOverlay')?.classList.remove('visible');
+}
+async function verifyEarlyUnlock() {
+  const login = banScreenPendingLogin;
+  const input = document.getElementById('earlyUnlockPassword');
+  const password = input?.value || '';
+  const error = document.getElementById('earlyUnlockError');
+  const button = document.querySelector('#earlyUnlockModal .unlock-danger-btn');
+  if (!login || !password) { error.textContent = 'Неверный пароль'; return; }
+  if (button) { button.disabled = true; button.textContent = 'Проверка…'; }
+  try {
+    const users = await dbGet('users', {}, true);
+    const userKey = Object.keys(users || {}).find(k => k.toLowerCase() === login.toLowerCase());
+    const user = userKey ? users[userKey] : null;
+    const hash = user && user.salt ? await hashPassword(password, user.salt) : '';
+    if (!user || hash !== user.passwordHash) {
+      error.textContent = 'Неверный пароль';
+      if (button) { button.disabled = false; button.textContent = 'Разблокировать'; }
+      return;
+    }
+  } catch (e) {
+    console.error('[Nexo] unlock verification failed:', e);
+    error.textContent = 'Не удалось проверить пароль. Попробуйте ещё раз.';
+    if (button) { button.disabled = false; button.textContent = 'Разблокировать'; }
+    return;
+  }
+  document.getElementById('earlyUnlockTitle').textContent = 'Проверка безопасности';
+  document.getElementById('earlyUnlockDescription').textContent = 'Мы убедились в надежности устройства и пароля и посчитали, что это действительно вы.';
+  document.getElementById('earlyUnlockSteps').style.display = 'none';
+  document.getElementById('earlyUnlockPassword').style.display = 'none';
+  error.textContent = '';
+  button.textContent = 'Продолжить';
+  button.disabled = false;
+  button.onclick = finishEarlyUnlock;
+}
+async function finishEarlyUnlock() {
+  const login = banScreenPendingLogin;
+  if (!login) return;
+  await unbanLogin(login);
+  closeEarlyUnlock();
+  document.getElementById('banScreenOverlay').style.display = 'none';
+  document.getElementById('earlyUnlockTrigger')?.style.setProperty('display', 'none');
   document.getElementById('auth').style.display = '';
   banScreenPendingLogin = null;
 }
