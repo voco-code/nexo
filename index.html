@@ -77,10 +77,12 @@ input, textarea { font-family: inherit; color: inherit; }
 /* ========== МОБИЛЬНАЯ ВЕРСИЯ (iPhone/Android) ==========
    Полноценный "нативный" мобильный интерфейс: список чатов и открытый чат —
    два полноэкранных слоя, которые едут друг за другом (как в Telegram/iMessage),
-   а не просто мгновенно скрываются через display:none. Боковая рель (rail)
-   становится нижним таб-баром. Переключение состояний — тот же класс
-   #app.content-open, который уже ставит JS в updateMobilePane(), здесь только
-   переосмыслена CSS-реакция на него. */
+   а не просто мгновенно скрываются через display:none. Боковая рель (с профилем
+   и Nexo Pro) на телефоне не нужна отдельной панелью — профиль и Pro и так
+   открываются через меню-гамбургер (☰) и через строку с именем в шапке списка,
+   поэтому рель на мобильном просто скрыта, а список чатов занимает весь экран.
+   Переключение "список <-> переписка" — тот же класс #app.content-open, который
+   ставит JS в updateMobilePane(), здесь только переосмыслена CSS-реакция. */
 .mobile-back-btn { display: none; }
 .mobile-back-bar { display: none; }
 .mobile-nav-backdrop { display: none; }
@@ -88,47 +90,8 @@ input, textarea { font-family: inherit; color: inherit; }
 @media (max-width: 760px) {
   #app { position: relative; overflow: hidden; }
 
-  /* --- Нижний таб-бар вместо левой рели --- */
-  .rail {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    width: 100%;
-    height: calc(58px + env(safe-area-inset-bottom));
-    padding: 6px 18px calc(6px + env(safe-area-inset-bottom));
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
-    gap: 0;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    z-index: 40;
-    transition: transform .28s cubic-bezier(.32,.72,0,1);
-  }
-  .rail .logo-mark { display: none; }
-  .rail-spacer { display: none; }
-  .rail-btn, .rail-avatar-wrap {
-    width: auto;
-    height: auto;
-    flex-direction: column;
-    gap: 3px;
-    padding: 4px 14px;
-    border-radius: 12px;
-  }
-  .rail-btn.crown-btn::after,
-  .rail-avatar-wrap::after {
-    font-size: 10.5px;
-    font-weight: 600;
-    color: var(--text-dim);
-    line-height: 1;
-  }
-  .rail-btn.crown-btn::after { content: "Pro"; }
-  .rail-avatar-wrap::after { content: "Профиль"; }
-  .rail-avatar-wrap { display: flex; align-items: center; margin-top: 0; }
-  .rail-avatar-wrap .rail-avatar { width: 28px; height: 28px; }
-  .rail-online-dot { right: 10px; bottom: 16px; }
-
-  /* Когда открыт чат — таб-бар уезжает вниз, чат занимает весь экран */
-  #app.content-open .rail { transform: translateY(100%); }
+  /* Рель (профиль/Pro) скрыта на телефоне — не нужна отдельная панель */
+  .rail { display: none !important; }
 
   /* --- Список чатов и открытый чат: два слоя друг над другом --- */
   .list-panel,
@@ -153,8 +116,8 @@ input, textarea { font-family: inherit; color: inherit; }
   #app.content-open .list-panel { transform: translateX(-24%); }
   #app.content-open .main-panel { transform: translateX(0); }
 
-  /* Место снизу списка чатов, чтобы нижний таб-бар не перекрывал последний чат */
-  .list-scroll { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+  /* Список чатов — на весь экран, без резерва под нижнюю панель (её нет) */
+  .list-scroll { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 
   .mobile-back-btn { display: flex; }
   .mobile-back-bar {
@@ -204,7 +167,20 @@ input, textarea { font-family: inherit; color: inherit; }
 
   /* Безопасные зоны iPhone (чёлка/индикатор жеста снизу) — работает вместе
      с viewport-fit=cover в <head>. */
-  .chat-input-wrap { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .chat-input-wrap { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+
+  /* --- Поле ввода сообщения и иконки — под палец, а не под курсор мыши --- */
+  .chat-input-row { gap: 6px; }
+  .input-box { padding: 5px 5px 5px 14px; border-radius: 24px; gap: 2px; }
+  .input-box textarea { font-size: 16px; padding: 8px 0; min-height: 22px; }
+  .input-tool-btn { width: 42px; height: 42px; }
+  .input-tool-btn .icon { width: 22px; height: 22px; }
+  .input-inline-btn { width: 34px; height: 34px; }
+  .input-inline-btn .icon { width: 20px; height: 20px; }
+  .send-btn { width: 44px; height: 44px; }
+  .send-btn .icon { width: 20px; height: 20px; }
+  .attach-dropdown { width: 220px; }
+  .attach-dropdown button { padding: 12px 10px; font-size: 14.5px; }
   #lockScreen { padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
   .call-modal { padding-bottom: calc(20px + env(safe-area-inset-bottom)); padding-top: calc(20px + env(safe-area-inset-top)); }
 
@@ -464,7 +440,9 @@ input, textarea { font-family: inherit; color: inherit; }
   gap: 6px;
   flex-shrink: 0;
 }
-.rail { display: flex !important; }
+@media (min-width: 761px) {
+  .rail { display: flex !important; }
+}
 .rail .logo-mark {
   width: 38px; height: 38px; font-size: 15px; margin-bottom: 10px; border-radius: 11px;
   box-shadow: 0 4px 12px rgba(14,165,233,0.28);
