@@ -74,141 +74,6 @@ input, textarea { font-family: inherit; color: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-/* ========== МОБИЛЬНАЯ ВЕРСИЯ (iPhone/Android) ==========
-   Полноценный "нативный" мобильный интерфейс: список чатов и открытый чат —
-   два полноэкранных слоя, которые едут друг за другом (как в Telegram/iMessage),
-   а не просто мгновенно скрываются через display:none. Боковая рель (с профилем
-   и Nexo Pro) на телефоне не нужна отдельной панелью — профиль и Pro и так
-   открываются через меню-гамбургер (☰) и через строку с именем в шапке списка,
-   поэтому рель на мобильном просто скрыта, а список чатов занимает весь экран.
-   Переключение "список <-> переписка" — тот же класс #app.content-open, который
-   ставит JS в updateMobilePane(), здесь только переосмыслена CSS-реакция. */
-.mobile-back-btn { display: none; }
-.mobile-back-bar { display: none; }
-.mobile-nav-backdrop { display: none; }
-
-@media (max-width: 760px) {
-  #app { position: relative; overflow: hidden; }
-
-  /* Рель (профиль/Pro) скрыта на телефоне — не нужна отдельная панель */
-  .rail { display: none !important; }
-
-  /* --- Список чатов и открытый чат: два слоя друг над другом --- */
-  .list-panel,
-  .main-panel {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    width: 100%;
-    display: flex;
-    border-right: none;
-    transition: transform .3s cubic-bezier(.32,.72,0,1);
-    will-change: transform;
-  }
-  .list-panel {
-    z-index: 10;
-    transform: translateX(0);
-  }
-  .main-panel {
-    z-index: 20;
-    transform: translateX(100%);
-    background: var(--bg);
-  }
-  #app.content-open .list-panel { transform: translateX(-24%); }
-  #app.content-open .main-panel { transform: translateX(0); }
-
-  /* Список чатов — на весь экран, без резерва под нижнюю панель (её нет) */
-  .list-scroll { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-
-  .mobile-back-btn { display: flex; }
-  .mobile-back-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    font-weight: 600;
-    font-size: 14.5px;
-    flex-shrink: 0;
-  }
-  .chat-header { padding-top: env(safe-area-inset-top); height: calc(64px + env(safe-area-inset-top)); }
-
-  /* iOS зумит страницу при фокусе на поле с font-size < 16px — держим всё
-     не меньше 16px, чтобы поле не "прыгало" при открытии клавиатуры. */
-  .field input,
-  .search-wrap input,
-  .add-friend-input input,
-  .friends-dd-search input,
-  #msgInput, #serverMsgInput,
-  #lockInput { font-size: 16px; }
-
-  /* Более крупные и "пальцеудобные" строки списка чатов */
-  .list-header { padding: calc(14px + env(safe-area-inset-top)) 16px 10px; }
-  .list-item { padding: 13px 12px; gap: 12px; border-radius: 14px; }
-  .list-item:active { background: var(--hover); }
-  .req-btn { width: 34px; height: 34px; }
-
-  /* Меню "Друзья" на телефоне открывается снизу, как шторка, а не узкой
-     плашкой под кнопкой — так по нему удобнее попадать пальцем и видно
-     сразу весь список, без прокрутки всей страницы. */
-  .friends-dropdown {
-    position: fixed;
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-height: 78dvh;
-    border-radius: 16px 16px 0 0;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .friends-dd-tab { padding: 9px 12px; font-size: 13px; }
-  .friends-dd-row { padding: 12px 8px; }
-  .friends-dd-add-form .add-friend-input button,
-  .friends-dd-add-form .add-friend-input input { padding: 12px 12px; }
-
-  /* Безопасные зоны iPhone (чёлка/индикатор жеста снизу) — работает вместе
-     с viewport-fit=cover в <head>. */
-  .chat-input-wrap { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
-
-  /* --- Поле ввода сообщения и иконки — под палец, а не под курсор мыши --- */
-  .chat-input-row { gap: 6px; }
-  .input-box { padding: 5px 5px 5px 14px; border-radius: 24px; gap: 2px; }
-  .input-box textarea { font-size: 16px; padding: 8px 0; min-height: 22px; }
-  .input-tool-btn { width: 42px; height: 42px; }
-  .input-tool-btn .icon { width: 22px; height: 22px; }
-  .input-inline-btn { width: 34px; height: 34px; }
-  .input-inline-btn .icon { width: 20px; height: 20px; }
-  .send-btn { width: 44px; height: 44px; }
-  .send-btn .icon { width: 20px; height: 20px; }
-  .attach-dropdown { width: 220px; }
-  .attach-dropdown button { padding: 12px 10px; font-size: 14.5px; }
-  #lockScreen { padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
-  .call-modal { padding-bottom: calc(20px + env(safe-area-inset-bottom)); padding-top: calc(20px + env(safe-area-inset-top)); }
-
-  /* Оверлеи/модалки на телефоне — снизу шторкой на весь экран, а не
-     маленькое окошко посередине: так привычнее и легче попасть пальцем */
-  .overlay {
-    padding: 0;
-    align-items: flex-end;
-  }
-  .modal {
-    width: 100%;
-    max-width: 100%;
-    max-height: 92dvh;
-    border-radius: 18px 18px 0 0;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Локальное превью в видеозвонке — компактнее на маленьком экране */
-  .call-local-video { width: 30%; max-width: 110px; }
-
-  .header-btn { width: 42px; height: 42px; } /* крупнее — легче попасть пальцем */
-  button, .list-item, .friends-dd-row, .hub-item { -webkit-tap-highlight-color: transparent; }
-}
-
-@media (max-width: 420px) {
-  .brand-hero h1 { font-size: 30px; }
-  .auth-form-wrap { padding: 24px 18px; }
-}
 
 .icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .icon-sm { width: 16px; height: 16px; }
@@ -2864,6 +2729,155 @@ img.premium-badge {
 .channel-profile-stats .stat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; text-align: left; }
 .channel-profile-stats .stat-row:last-child { border-bottom: none; }
 .channel-profile-stats .stat-row .icon { color: var(--text-dim); flex-shrink: 0; }
+
+/* ===== МОБИЛЬНЫЕ ПРАВИЛА ПЕРЕНЕСЕНЫ В КОНЕЦ STYLE-БЛОКА =====
+   Чтобы гарантированно выигрывать каскад у обычных (не мобильных) правил
+   компонентов, которые объявлены ниже по файлу — при равной специфичности
+   побеждает то, что идёт позже в исходном коде, а не то, что "более mobile". */
+/* ========== МОБИЛЬНАЯ ВЕРСИЯ (iPhone/Android) ==========
+   Полноценный "нативный" мобильный интерфейс: список чатов и открытый чат —
+   два полноэкранных слоя, которые едут друг за другом (как в Telegram/iMessage),
+   а не просто мгновенно скрываются через display:none. Боковая рель (с профилем
+   и Nexo Pro) на телефоне не нужна отдельной панелью — профиль и Pro и так
+   открываются через меню-гамбургер (☰) и через строку с именем в шапке списка,
+   поэтому рель на мобильном просто скрыта, а список чатов занимает весь экран.
+   Переключение "список <-> переписка" — тот же класс #app.content-open, который
+   ставит JS в updateMobilePane(), здесь только переосмыслена CSS-реакция. */
+.mobile-back-btn { display: none; }
+.mobile-back-bar { display: none; }
+.mobile-nav-backdrop { display: none; }
+
+@media (max-width: 760px) {
+  #app { position: relative; overflow: hidden; }
+
+  /* Рель (профиль/Pro) скрыта на телефоне — не нужна отдельная панель */
+  .rail { display: none !important; }
+
+  /* --- Список чатов и открытый чат: два слоя друг над другом --- */
+  .list-panel,
+  .main-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    display: flex;
+    border-right: none;
+    transition: transform .3s cubic-bezier(.32,.72,0,1);
+    will-change: transform;
+  }
+  .list-panel {
+    z-index: 10;
+    transform: translateX(0);
+  }
+  .main-panel {
+    z-index: 20;
+    transform: translateX(100%);
+    background: var(--bg);
+  }
+  #app.content-open .list-panel { transform: translateX(-24%); }
+  #app.content-open .main-panel { transform: translateX(0); }
+
+  /* Список чатов — на весь экран, без резерва под нижнюю панель (её нет) */
+  .list-scroll { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+
+  .mobile-back-btn { display: flex; }
+  .mobile-back-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 14.5px;
+    flex-shrink: 0;
+  }
+  .chat-header { padding-top: env(safe-area-inset-top); height: calc(64px + env(safe-area-inset-top)); }
+
+  /* iOS зумит страницу при фокусе на поле с font-size < 16px — держим всё
+     не меньше 16px, чтобы поле не "прыгало" при открытии клавиатуры. */
+  .field input,
+  .search-wrap input,
+  .add-friend-input input,
+  .friends-dd-search input,
+  #msgInput, #serverMsgInput,
+  #lockInput { font-size: 16px; }
+
+  /* Более крупные и "пальцеудобные" строки списка чатов */
+  .list-header { padding: calc(14px + env(safe-area-inset-top)) 16px 10px; }
+  .list-item { padding: 13px 12px; gap: 12px; border-radius: 14px; }
+  .list-item:active { background: var(--hover); }
+  .req-btn { width: 34px; height: 34px; }
+
+  /* Меню "Друзья" на телефоне открывается снизу, как шторка, а не узкой
+     плашкой под кнопкой — так по нему удобнее попадать пальцем и видно
+     сразу весь список, без прокрутки всей страницы. */
+  .friends-dropdown {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 78dvh;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .friends-dd-tab { padding: 9px 12px; font-size: 13px; }
+  .friends-dd-row { padding: 12px 8px; }
+  .friends-dd-add-form .add-friend-input button,
+  .friends-dd-add-form .add-friend-input input { padding: 12px 12px; }
+
+  /* Безопасные зоны iPhone (чёлка/индикатор жеста снизу) — работает вместе
+     с viewport-fit=cover в <head>. */
+  .chat-input-wrap { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+
+  /* --- Поле ввода сообщения и иконки — под палец, а не под курсор мыши --- */
+  .chat-input-row { gap: 6px; }
+  .input-box { padding: 5px 5px 5px 14px; border-radius: 24px; gap: 2px; }
+  .input-box textarea { font-size: 16px; padding: 8px 0; min-height: 22px; }
+  .input-tool-btn { width: 42px; height: 42px; }
+  .input-tool-btn .icon { width: 22px; height: 22px; }
+  .input-inline-btn { width: 34px; height: 34px; }
+  .input-inline-btn .icon { width: 20px; height: 20px; }
+  .send-btn { width: 44px; height: 44px; }
+  .send-btn .icon { width: 20px; height: 20px; }
+  .attach-dropdown { width: 220px; }
+  .attach-dropdown button { padding: 12px 10px; font-size: 14.5px; }
+  #lockScreen { padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
+  .call-modal { padding-bottom: calc(20px + env(safe-area-inset-bottom)); padding-top: calc(20px + env(safe-area-inset-top)); }
+
+  /* Оверлеи/модалки на телефоне — снизу шторкой на весь экран, а не
+     маленькое окошко посередине: так привычнее и легче попасть пальцем */
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Локальное превью в видеозвонке — компактнее на маленьком экране */
+  .call-local-video { width: 30%; max-width: 110px; }
+
+  .header-btn { width: 42px; height: 42px; } /* крупнее — легче попасть пальцем */
+  button, .list-item, .friends-dd-row, .hub-item { -webkit-tap-highlight-color: transparent; }
+
+  /* Пузыри сообщений были ограничены max-width:62% — это рассчитано на
+     широкую десктопную панель. На экране телефона (~360-400px) 62% — это
+     всего ~220px, текст сжимается в узкую колонку с кучей переносов и
+     выглядит так, будто видна лишь половина сообщения. На мобильном пузырь
+     может занимать почти всю ширину экрана. */
+  .chat-messages { padding: 14px 12px; gap: 5px; }
+  .bubble-wrap { max-width: 86%; }
+  .bubble { font-size: 15px; }
+}
+
+@media (max-width: 420px) {
+  .brand-hero h1 { font-size: 30px; }
+  .auth-form-wrap { padding: 24px 18px; }
+}
 </style>
 </head>
 <body>
