@@ -2841,6 +2841,10 @@ img.premium-badge {
   .send-btn .icon { width: 20px; height: 20px; }
   .attach-dropdown { width: 220px; }
   .attach-dropdown button { padding: 12px 10px; font-size: 14.5px; }
+  /* Камера внутри поля ввода дублирует пункт "Фото или видео" в меню
+     скрепки — на телефоне убираем дубль, чтобы в строке было меньше тесных
+     иконок: остаются скрепка, поле со стикерами и отправка/микрофон. */
+  #mediaAttachBtn { display: none; }
   #lockScreen { padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
   .call-modal { padding-bottom: calc(20px + env(safe-area-inset-bottom)); padding-top: calc(20px + env(safe-area-inset-top)); }
 
