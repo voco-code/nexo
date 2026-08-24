@@ -75,7 +75,7 @@ input, textarea { font-family: inherit; color: inherit; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
 
-.icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; display: block; }
 .icon-sm { width: 16px; height: 16px; }
 .icon-lg { width: 24px; height: 24px; }
 
@@ -994,12 +994,14 @@ input, textarea { font-family: inherit; color: inherit; }
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
   contain: content; /* сообщения не влияют на layout вне контейнера — быстрее reflow на длинной переписке */
 }
 .day-divider {
@@ -1031,6 +1033,7 @@ input, textarea { font-family: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   max-width: 62%;
+  min-width: 0;
   position: relative;
   animation: bubble-in .28s cubic-bezier(.2,.8,.2,1) both;
 }
@@ -1043,6 +1046,9 @@ input, textarea { font-family: inherit; color: inherit; }
   line-height: 1.45;
   position: relative;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
   white-space: pre-wrap;
   transition: box-shadow .08s;
 }
@@ -1313,6 +1319,8 @@ input, textarea { font-family: inherit; color: inherit; }
   display: flex;
   gap: 8px;
   align-items: flex-end;
+  width: 100%;
+  min-width: 0;
 }
 .blocked-input-note {
   display: flex;
@@ -1330,6 +1338,7 @@ input, textarea { font-family: inherit; color: inherit; }
 .blocked-input-note .link-btn { flex-shrink: 0; color: var(--danger); font-weight: 600; }
 .input-box {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: flex-end;
   gap: 4px;
@@ -1345,6 +1354,8 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 .input-box textarea {
   flex: 1;
+  min-width: 0;
+  width: 0;
   border: none;
   background: transparent;
   outline: none;
